@@ -1,0 +1,228 @@
+----------- Projeto Catálogo de Livros ----------------
+HTML
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aula 20: JSON e Projeto Livraria</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="scripts.js" defer></script>
+</head>
+
+<body>
+    <h1>Infinity Books</h1>
+
+    <h2>Catálogo de Livros</h2>
+    <form id="book-form" action="">
+        <label for="titulo">Título</label>
+        <input type="text" id="titulo" required>
+        <label for="autor">Autor</label>
+        <input type="text" id="autor" required>
+        <label for="genero">Gênero</label>
+        <input type="text" id="genero" required>
+        <label for="ano">Ano de Publicação</label>
+        <input type="number" id="ano" required>
+        <label for="rating">Avaliação</label>
+        <input type="number" id="rating" min="1" max="5" required>
+        <button type="submit">Adicionar</button>
+    </form>
+
+    <h2>Lista de Livros</h2>
+    <ul id="book-list"></ul>
+</body>
+</html>
+
+CSS
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Georgia, 'Times New Roman', Times, sans-serif;
+}
+
+body {
+    padding: 20px;
+    background-color: grey;
+}
+
+h1, h2 {
+    text-align: center;
+}
+
+form {
+    max-width: 400px;
+    padding: 10px;
+    margin: 20px auto;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+form label {
+    display: block;
+    margin-bottom: 8px;
+}
+
+form input {
+    width: 100%;
+    padding: 8px;
+    margin-bottom: 10px;
+    border: 1px solid grey;
+    border-radius: 4px;
+}
+
+#rating {
+    width: 20%;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background-color: #0056b3;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+button:hover {
+    background-color: #0077bf;
+}
+
+#book-list {
+    list-style-type: none;
+}
+
+#book-list li {
+    background-color: #fff;
+    margin: 10px;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.8);
+}
+
+.rating-form {
+    display: none;
+    margin-top: 10px;
+}
+
+.rating-form input {
+    width: 50px;
+    padding: 8px;
+    margin-right: 10px;
+    border: 1px  solid  #ccc;
+}
+
+.rating-form button {
+    padding: 8px 16px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+.rating-form button:hover {
+    background-color: #218838;
+}
+
+SCRIPTS JS (armazenar dados no local storage)
+
+const titulo = document.querySelector("#titulo")
+const autor = document.querySelector("#autor")
+const genero = document.querySelector("#genero")
+const ano = document.querySelector("#ano")
+const rating = document.querySelector("#rating")
+const bookForm = document.querySelector("#book-form")
+const bookList = document.querySelector("#book-list")
+
+function getBooks() {
+    return JSON.parse(localStorage.getItem('books')) || []
+}
+
+function setBooks(books) {
+    localStorage.setItem('books', JSON.stringify(books))
+}
+
+function displayBooks() {
+    bookList.innerHTML = ''
+    const books = getBooks()
+    for (const book of books) {
+        addBookToList(book, books.indexOf(book))
+    }
+}
+
+function calcularRatingMedio(ratings) {
+    const soma = ratings.reduce((acc, nota) => {
+        return acc + nota
+    }, 0)
+
+    return (soma / ratings.length).toFixed(2)
+}
+
+function updateRating(e, index) {
+    e.preventDefault()
+    const newRating = document.querySelector(`#new-rating-${index}`).value
+    const books = getBooks()
+    const book = books[index]
+
+    book.ratings.push(Number(newRating))
+    book.rating = calcularRatingMedio(book.ratings)
+
+    setBooks(books)
+    bookList.innerHTML = ''
+    displayBooks()
+}
+
+function showRatingForm(index) {
+    const ratingForm = document.querySelector(`#rating-form-${index}`)
+    ratingForm.style.display = "block"
+}
+
+function addBookToList (book, index) {
+    const li = document.createElement('li')
+
+    li.innerHTML = `${book.titulo}, ${book.ano} por ${book.autor} | Gênero: ${book.genero} | * Nota: ${book.rating}
+    <button onclick="showRatingForm(${index})">Add rating</button>
+    <form class="rating-form" id="rating-form-${index}">
+    <input type="number" id="new-rating-${index}" min="1" max="5">
+    <button type="submit">Enviar</button>
+    <form>`
+
+    bookList.append(li)
+
+    const formRating = document.querySelector(`#rating-form-${index}`)
+    formRating.addEventListener('submit', (e) => updateRating(e, index))
+}
+
+function addBook(e) {
+    // preventDefault (muda ou bloqueia o comportamento padrão do recurso)
+    e.preventDefault()
+    const book = {
+        "titulo": titulo.value,
+        "autor": autor.value,
+        "genero": genero.value,
+        "ano": ano.value,
+        "rating": rating.value,
+        "ratings": []
+    }
+
+    const books = getBooks()
+    books.push(book)
+    setBooks(books)
+
+    addBookToList(book, books.length - 1)
+    limparCampos()
+}
+
+function limparCampos() {
+    titulo.value = ''
+    autor.value = ''
+    genero.value = ''
+    ano.value = ''
+    rating.value = ''
+    titulo.focus()
+}
+
+bookForm.addEventListener('submit', addBook)
+displayBooks()
